@@ -1459,14 +1459,15 @@ static bool whisper_encode_internal(
         wstate.use_buf(ctx0, -1);
 
         cur = ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, n_state, n_ctx);
-
+        
         whisper_coreml_encode(wstate.ctx_coreml, (float *) mel->data, (float *) cur->data);
-	 for (int i = 0; i < cur -> ne[0]; ++i) {
-	    if (isnan(((float *)(cur->data))[i])) {
-    		fprintf(stderr, "CoreML data error. Falling back to non CoreML implementation");
-		use_coreml_surely = false;
-	    }
-	}
+        for (int i = 0; i < cur -> ne[0]; ++i) {
+            if (isnan(((float *)(cur->data))[i])) {
+                fprintf(stderr, "CoreML data error. Falling back to non CoreML implementation");
+                use_coreml_surely = false;
+                return false;
+            }
+        }
     }
 
     if (!use_coreml_surely) {
@@ -1781,6 +1782,13 @@ static bool whisper_encode_internal(
     //    }
     //    printf("\n");
     //}
+
+    for (int i = 0; i < cur -> ne[0]; ++i) {
+        if (isnan(((float *)(cur->data))[i])) {
+            fprintf(stderr, "Whisper_encode has bad data");
+            return false;
+        }
+    }
 
     // pre-compute cross-attention memory
     {
